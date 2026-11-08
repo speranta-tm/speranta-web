@@ -23,7 +23,7 @@ export function HomePage() {
     <>
       {/* Hero, with the schedule card overlapping its lower edge. */}
       <section className="relative">
-        <div className="relative flex min-h-[451px] items-center justify-center overflow-hidden lg:h-[720px]">
+        <div className="relative flex items-center justify-center overflow-hidden sm:min-h-[451px] lg:h-[720px]">
           <img src={hero} alt="" fetchPriority="high" className="absolute inset-0 size-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/55 to-ink/70" />
           <div className="relative flex max-w-[720px] flex-col items-center gap-4 px-4 pt-[72px] pb-24 text-center lg:gap-6 lg:pt-0 lg:pb-40">
@@ -32,7 +32,8 @@ export function HomePage() {
               <br className="hidden lg:block" /> de Ziua a Șaptea
             </h1>
             <p className="text-xl leading-7 font-semibold text-white lg:text-2xl">{church.place}</p>
-            <div className="mt-2 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
+            {/* Not on a phone (Figma › Acasă · Mobile): the menu has both links. */}
+            <div className="mt-2 hidden w-full gap-3 sm:flex sm:w-auto sm:flex-row sm:gap-4">
               <ButtonLink to={flyer} icon="download" newTab block className="sm:w-auto">
                 Descarcă pliantul lunar
               </ButtonLink>
