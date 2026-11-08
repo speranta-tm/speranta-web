@@ -1,6 +1,9 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Icon } from '../../components/Icon'
-import { books as content } from '../../content/books'
+import { ButtonLink } from '../../components/Button'
+import { coverFor } from '../../content/books'
+import { apiUrl } from '../../lib/api'
 import { cx } from '../../lib/cx'
 import { useTitle } from '../../lib/useTitle'
 import { adminApi, type AdminBook } from '../api'
@@ -10,7 +13,8 @@ import { Card, ErrorNote, Loading, PageHead, Switch } from '../ui'
 
 /**
  * Figma › "Admin · Cărți". The order here is the order on the site; a book switched
- * off shows "Stoc epuizat" and takes no orders. Book texts live in code.
+ * off shows "Stoc epuizat" and takes no orders. "Carte nouă" and "Editează" open the
+ * book editor.
  */
 export function BooksPage() {
   useTitle('Cărți')
@@ -43,12 +47,16 @@ export function BooksPage() {
 
   return (
     <>
-      <PageHead title="Cărți" sub="Ordinea de aici e ordinea de pe site. Oprește o carte când se termină stocul." />
+      <PageHead title="Cărți" sub="Ordinea de aici e ordinea de pe site. Oprește o carte când se termină stocul.">
+        <ButtonLink to="/admin/carti/nou" icon="book-open">
+          Carte nouă
+        </ButtonLink>
+      </PageHead>
       {error && <ErrorNote>{error}</ErrorNote>}
       <Card>
         <ul>
           {list.map((b, i) => {
-            const cover = content.find((c) => c.slug === b.slug)?.cover
+            const cover = coverFor(b.slug, b.coverUrl, apiUrl)
             return (
               <li
                 key={b.id}
@@ -75,7 +83,9 @@ export function BooksPage() {
                 </span>
                 {cover && <img src={cover} alt="" className="h-12 w-9 shrink-0 rounded object-cover" />}
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="t-body font-semibold text-ink">{b.title}</span>
+                  <Link to={`/admin/carti/${b.id}`} className="t-body font-semibold text-ink hover:text-primary">
+                    {b.title}
+                  </Link>
                   <span className="t-small text-muted">
                     {b.isAvailable
                       ? `${count(b.newThisMonth, 'comandă', 'comenzi')} luna aceasta`
@@ -84,6 +94,11 @@ export function BooksPage() {
                 </div>
                 <span className={cx('t-small hidden sm:inline', b.isAvailable ? 'text-ink-2' : 'text-muted')}>
                   {b.isAvailable ? 'Activă' : 'Oprită'}
+                </span>
+                <span className="hidden sm:block">
+                  <ButtonLink to={`/admin/carti/${b.id}`} variant="ghost" size="s">
+                    Editează
+                  </ButtonLink>
                 </span>
                 <Switch
                   checked={b.isAvailable}

@@ -107,6 +107,31 @@ export interface BookInfo {
   asksBibleAtHome: boolean
   allowsPickup: boolean
   isForChildren: boolean
+  /** One sentence for the catalogue. */
+  blurb: string
+  /** API-relative; null for the six launch books, whose covers ship with this client. */
+  coverUrl: string | null
+}
+
+/** Everything a book's page shows (GET /books/{slug}). */
+export interface BookPageData {
+  slug: string
+  title: string
+  heading: string
+  blurb: string
+  lead: string
+  paragraphs: string[]
+  benefits: string[]
+  closing: string | null
+  formEyebrow: string
+  formTitle: string
+  coverUrl: string | null
+  bannerUrl: string | null
+  isAvailable: boolean
+  asksAgeGroup: boolean
+  asksBibleAtHome: boolean
+  allowsPickup: boolean
+  isForChildren: boolean
 }
 
 export interface SiteInfo {
@@ -187,6 +212,8 @@ const post = <T>(path: string, body: unknown) =>
 
 export const api = {
   site: () => request<SiteInfo>('/site'),
+
+  book: (slug: string) => request<BookPageData>(`/books/${encodeURIComponent(slug)}`),
 
   announcements: (page = 1, pageSize = 9, home = false) => {
     const query = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })

@@ -56,9 +56,11 @@ export function AnnouncementsPage() {
                 <Badge tone={a.status === 'Draft' ? 'neutral' : a.isLive ? 'done' : 'progress'}>
                   {a.status === 'Draft' ? 'Ciornă' : a.isLive ? 'Publicat' : 'Programat'}
                 </Badge>
-                <ButtonLink to={`/admin/anunturi/${a.id}`} variant="ghost" size="s" className="hidden sm:inline-flex">
-                  Editează
-                </ButtonLink>
+                <span className="hidden sm:block">
+                  <ButtonLink to={`/admin/anunturi/${a.id}`} variant="ghost" size="s">
+                    Editează
+                  </ButtonLink>
+                </span>
               </li>
             ))}
           </ul>

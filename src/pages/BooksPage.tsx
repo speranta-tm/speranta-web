@@ -3,7 +3,8 @@ import { IconTile, PageTitle } from '../components/Bits'
 import { useTitle } from '../lib/useTitle'
 import { ButtonLink } from '../components/Button'
 import type { IconName } from '../components/Icon'
-import { books } from '../content/books'
+import { coverFor } from '../content/books'
+import { apiUrl } from '../lib/api'
 import { useSite } from '../lib/site'
 
 const steps: { icon: IconName; step: string; title: string; text: string }[] = [
@@ -33,13 +34,12 @@ export function BooksPage() {
       <section className="container-page pt-10 pb-16 lg:pt-16 lg:pb-24">
         <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
           {site.books.map((info) => {
-            const book = books.find((b) => b.slug === info.slug)
-            if (!book) return null
+            const book = info
             return (
               <li key={book.slug} className="flex gap-5 rounded-[24px] border border-line bg-white p-5 lg:gap-6 lg:p-6">
                 <Link to={`/carti-gratuite/${book.slug}`} tabIndex={-1} aria-hidden="true" className="shrink-0">
                   <img
-                    src={book.cover}
+                    src={coverFor(book.slug, book.coverUrl, apiUrl)}
                     alt=""
                     loading="lazy"
                     className="h-[148px] w-[111px] rounded-[10px] bg-surface object-cover shadow-[0_8px_20px_rgb(26_32_44/0.15)] lg:h-[176px] lg:w-[132px]"

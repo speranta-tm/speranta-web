@@ -5,47 +5,79 @@ import { useTitle } from '../lib/useTitle'
 import { Button, ButtonLink } from '../components/Button'
 import { Consent, Honeypot, RadioGroup, SelectField, TextField } from '../components/Field'
 import { Icon, type IconName } from '../components/Icon'
-import { bookBySlug, type BookContent } from '../content/books'
+import { bannerFor, bookBySlug, coverFor } from '../content/books'
 import { church } from '../content/church'
-import { api, type AgeGroup, type BookInfo, type DeliveryMethod } from '../lib/api'
+import { api, apiUrl, ApiError, type AgeGroup, type BookInfo, type BookPageData, type DeliveryMethod } from '../lib/api'
 import { cx } from '../lib/cx'
 import { ageGroups, isPhone, useFormSubmit } from '../lib/forms'
 import { useSite } from '../lib/site'
+import { useLoad } from '../lib/useAnnouncements'
 import { NotFoundPage } from './NotFoundPage'
 import type { ThanksState } from './ThanksPage'
 
-/** Figma › "Carte · …" (six pages, one template). */
-export function BookPage() {
-  const { slug } = useParams()
-  const content = bookBySlug(slug)
-  const site = useSite()
-  const info = site.books.find((b) => b.slug === slug)
-  useTitle(content?.title ?? 'Pagina nu există')
+/** A launch book's built-in text, shaped like the API's answer (fallback while loading or offline). */
+function builtIn(slug: string, info: BookInfo | undefined): BookPageData | null {
+  const c = bookBySlug(slug)
+  if (!c) return null
+  return {
+    slug,
+    title: c.title,
+    heading: c.heading,
+    blurb: c.blurb,
+    lead: c.lead,
+    paragraphs: c.paragraphs,
+    benefits: c.benefits ?? [],
+    closing: c.closing ?? null,
+    formEyebrow: c.formEyebrow,
+    formTitle: c.formTitle,
+    coverUrl: null,
+    bannerUrl: null,
+    isAvailable: info?.isAvailable ?? true,
+    asksAgeGroup: info?.asksAgeGroup ?? false,
+    asksBibleAtHome: info?.asksBibleAtHome ?? false,
+    allowsPickup: info?.allowsPickup ?? false,
+    isForChildren: info?.isForChildren ?? false,
+  }
+}
 
-  if (!content || !info) return <NotFoundPage />
+/** Figma › "Carte · …": one template for every book, its content from the API. */
+export function BookPage() {
+  const { slug = '' } = useParams()
+  const site = useSite()
+  const loaded = useLoad<BookPageData, { state: 'missing' }>(
+    slug,
+    () => api.book(slug),
+    (e) => (e instanceof ApiError && e.status === 404 ? { state: 'missing' } : { state: 'error' }),
+  )
+  const fallback = builtIn(slug, site.books.find((b) => b.slug === slug))
+  const book = loaded.state === 'ready' ? loaded.data : fallback
+  useTitle(book?.title ?? (loaded.state === 'loading' ? '' : 'Pagina nu există'))
+
+  if (loaded.state === 'missing' || (loaded.state === 'error' && !book)) return <NotFoundPage />
+  if (!book) return <div className="min-h-[60vh] animate-pulse bg-surface-2" />
 
   return (
     <>
-      <Banner book={content} info={info} />
+      <Banner book={book} info={book} />
       <div className="lg:mx-auto lg:flex lg:max-w-[1354px] lg:items-start lg:gap-16 lg:px-8 lg:pt-[72px] lg:pb-24">
-        <Description book={content} info={info} />
+        <Description book={book} info={book} />
         <section id="comanda" className="scroll-mt-20 bg-surface-2 px-4 py-12 lg:sticky lg:top-28 lg:w-[520px] lg:shrink-0 lg:bg-transparent lg:p-0">
-          <OrderForm book={content} info={info} />
+          <OrderForm key={book.slug} book={book} info={book} />
         </section>
       </div>
     </>
   )
 }
 
-function Banner({ book, info }: { book: BookContent; info: BookInfo }) {
+function Banner({ book, info }: { book: BookPageData; info: BookPageData }) {
   const tags = [...(info.isForChildren ? ['Carte pentru copii'] : []), 'Gratuit', 'Livrare în Timișoara']
   return (
     <section className="relative overflow-hidden bg-ink">
-      <img src={book.banner} alt="" className="absolute inset-0 size-full scale-105 object-cover opacity-60 blur-[2px]" />
+      <img src={bannerFor(book.slug, book.bannerUrl, apiUrl)} alt="" className="absolute inset-0 size-full scale-105 object-cover opacity-60 blur-[2px]" />
       <div className="absolute inset-0 bg-ink/60" />
       <div className="container-page relative flex flex-col items-center gap-3.5 py-8 text-center lg:flex-row lg:gap-16 lg:py-[72px] lg:text-left">
         <img
-          src={book.cover}
+          src={coverFor(book.slug, book.coverUrl, apiUrl)}
           alt={`Coperta cărții „${book.title}”`}
           className="h-[200px] w-[150px] rounded-[10px] bg-surface object-cover shadow-[0_20px_40px_rgb(0_0_0/0.35)] lg:h-[280px] lg:w-[210px] lg:rounded-xl"
         />
@@ -79,7 +111,7 @@ function Banner({ book, info }: { book: BookContent; info: BookInfo }) {
   )
 }
 
-function Description({ book, info }: { book: BookContent; info: BookInfo }) {
+function Description({ book, info }: { book: BookPageData; info: BookPageData }) {
   // On a phone the description folds after the first paragraph ("Citește tot textul").
   const [open, setOpen] = useState(false)
   const steps: { icon: IconName; title: string; text: string }[] = [
@@ -116,7 +148,7 @@ function Description({ book, info }: { book: BookContent; info: BookInfo }) {
             {p}
           </p>
         ))}
-        {book.benefits && (
+        {book.benefits.length > 0 && (
           <ul className="flex flex-col gap-2.5">
             {book.benefits.map((b) => (
               <Point key={b}>{b}</Point>
@@ -185,7 +217,7 @@ function Description({ book, info }: { book: BookContent; info: BookInfo }) {
   )
 }
 
-function OrderForm({ book, info }: { book: BookContent; info: BookInfo }) {
+function OrderForm({ book, info }: { book: BookPageData; info: BookPageData }) {
   const navigate = useNavigate()
   const { errors, formError, busy, submit, clear } = useFormSubmit<{ reference: number }>()
   const [fullName, setFullName] = useState('')

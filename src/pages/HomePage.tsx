@@ -7,7 +7,6 @@ import { AnnouncementCard, BookCard, MapEmbed, YouTubeEmbed } from '../component
 import { useTitle } from '../lib/useTitle'
 import { ButtonLink } from '../components/Button'
 import { Icon, type IconName } from '../components/Icon'
-import { books } from '../content/books'
 import { church } from '../content/church'
 import { dayName, span } from '../lib/format'
 import { useFlyerUrl, useSite } from '../lib/site'
@@ -19,8 +18,6 @@ export function HomePage() {
   const site = useSite()
   const flyer = useFlyerUrl()
   const announcements = useAnnouncements(1, 3, true)
-  const available = (slug: string) => site.books.find((b) => b.slug === slug)?.isAvailable ?? true
-  const ordered = site.books.map((b) => books.find((c) => c.slug === b.slug)).filter((b) => b !== undefined)
 
   return (
     <>
@@ -79,9 +76,9 @@ export function HomePage() {
           </p>
         </div>
         <ul className="grid w-full grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6 lg:gap-[18px]">
-          {ordered.map((b) => (
+          {site.books.map((b) => (
             <li key={b.slug}>
-              <BookCard book={b} available={available(b.slug)} />
+              <BookCard book={b} />
             </li>
           ))}
         </ul>
