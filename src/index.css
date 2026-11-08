@@ -1,0 +1,223 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+
+/*
+ * Design tokens, one-to-one with the Figma variables
+ * (https://www.figma.com/design/NolJGaQ4AKE8Eqwc3ZXTaS, collection "Tokens").
+ * Change a value there first, then here.
+ */
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --color-primary: #005581;
+  --color-primary-hover: #004266;
+  --color-accent: #037dc0;
+  --color-ink: #1a202c;
+  --color-ink-2: #2d3748;
+  --color-body: #4a5568;
+  --color-muted: #718096;
+  --color-line: #e2e8f0;
+  --color-surface: #edf2f7;
+  --color-surface-2: #f7fafc;
+  --color-success: #13612e;
+  --color-warning: #b45309;
+  --color-danger: #b82105;
+  --color-info: #1159af;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 24px;
+}
+
+/*
+ * Text styles, mirroring the Figma text styles. The Desktop/Mobile pairs switch
+ * at the lg breakpoint, so one class serves both frames.
+ */
+@layer components {
+  .t-display {
+    font-weight: 700;
+    font-size: 40px;
+    line-height: 48px;
+    letter-spacing: -0.01em;
+  }
+  .t-h1 {
+    font-weight: 700;
+    font-size: 32px;
+    line-height: 40px;
+    letter-spacing: -0.005em;
+  }
+  .t-h2 {
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .t-h3 {
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 28px;
+  }
+  @media (min-width: 64rem) {
+    .t-display {
+      font-size: 72px;
+      line-height: 84px;
+      letter-spacing: -0.015em;
+    }
+    .t-h1 {
+      font-size: 48px;
+      line-height: 58px;
+      letter-spacing: -0.01em;
+    }
+    .t-h2 {
+      font-size: 32px;
+      line-height: 40px;
+      letter-spacing: -0.005em;
+    }
+    .t-h3 {
+      font-size: 24px;
+      line-height: 32px;
+    }
+  }
+  .t-card-title {
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 24px;
+  }
+  .t-eyebrow {
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 16px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .t-lead {
+    font-size: 18px;
+    line-height: 28px;
+  }
+  @media (min-width: 64rem) {
+    .t-lead {
+      font-size: 20px;
+      line-height: 30px;
+    }
+  }
+  .t-body {
+    font-size: 16px;
+    line-height: 26px;
+  }
+  .t-small {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .t-caption {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .t-label {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .t-nav {
+    font-weight: 500;
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  /* The page grid: 1290px of content, centred, as in every desktop frame. */
+  .container-page {
+    margin-inline: auto;
+    width: 100%;
+    max-width: calc(1290px + 2 * 1rem);
+    padding-inline: 1rem;
+  }
+  @media (min-width: 48rem) {
+    .container-page {
+      max-width: calc(1290px + 2 * 2rem);
+      padding-inline: 2rem;
+    }
+  }
+
+  /* Announcement bodies come from the admin editor as sanitised HTML. */
+  .prose-anunt > * + * {
+    margin-top: 1rem;
+  }
+  .prose-anunt p {
+    font-size: 16px;
+    line-height: 26px;
+    color: var(--color-body);
+  }
+  .prose-anunt > p:first-child {
+    font-size: 20px;
+    line-height: 30px;
+    color: var(--color-ink-2);
+  }
+  .prose-anunt h2,
+  .prose-anunt h3 {
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 32px;
+    color: var(--color-ink);
+    margin-top: 2rem;
+  }
+  .prose-anunt ul {
+    list-style: none;
+    padding: 0;
+  }
+  .prose-anunt ul li {
+    position: relative;
+    padding-left: 32px;
+    color: var(--color-ink-2);
+    line-height: 26px;
+  }
+  .prose-anunt ul li + li {
+    margin-top: 0.5rem;
+  }
+  .prose-anunt ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 3px;
+    width: 20px;
+    height: 20px;
+    background-color: var(--color-primary);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17L4 12'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+  .prose-anunt ol {
+    list-style: decimal;
+    padding-left: 1.5rem;
+    color: var(--color-ink-2);
+  }
+  .prose-anunt a {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .prose-anunt blockquote {
+    border-left: 3px solid var(--color-line);
+    padding-left: 1rem;
+    color: var(--color-body);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background: #fff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A visible focus ring for keyboard users only. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
