@@ -4,6 +4,7 @@ import { AdminLayout } from './AdminLayout'
 import { AdminsPage } from './pages/AdminsPage'
 import { AnnouncementEditorPage, AnnouncementsPage } from './pages/AnnouncementsPages'
 import { AcceptInvitePage, ForgotPasswordPage, LoginPage, ResetPasswordPage } from './pages/AuthPages'
+import { BookEditorPage } from './pages/BookEditorPage'
 import { BooksPage } from './pages/BooksPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { MessagesPage } from './pages/MessagesPage'
@@ -51,6 +52,7 @@ export default function AdminApp() {
         <Route path="anunturi/:id" element={<AnnouncementEditorPage />} />
         <Route path="program" element={<SchedulePage />} />
         <Route path="carti" element={<BooksPage />} />
+        <Route path="carti/:id" element={<BookEditorPage />} />
         <Route path="administratori" element={<AdminsPage />} />
         <Route
           path="*"

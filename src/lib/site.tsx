@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { api, apiUrl, type SiteInfo } from './api'
+import { books as launchBooks } from '../content/books'
 import { church } from '../content/church'
 
 /**
@@ -20,14 +21,19 @@ const FALLBACK: SiteInfo = {
   ],
   kidsPhone: '0764 915 396',
   flyer: null,
-  books: [
-    { slug: 'biblia', title: 'Biblia', isAvailable: true, asksAgeGroup: true, asksBibleAtHome: true, allowsPickup: false, isForChildren: false },
-    { slug: 'viata-lui-isus', title: 'Viața lui Isus', isAvailable: true, asksAgeGroup: true, asksBibleAtHome: false, allowsPickup: false, isForChildren: false },
-    { slug: 'tragedia-veacurilor', title: 'Tragedia veacurilor', isAvailable: true, asksAgeGroup: true, asksBibleAtHome: false, allowsPickup: false, isForChildren: false },
-    { slug: 'calea-catre-hristos', title: 'Calea către Hristos', isAvailable: true, asksAgeGroup: true, asksBibleAtHome: false, allowsPickup: false, isForChildren: false },
-    { slug: 'biblia-pentru-elevi', title: 'Biblia pentru elevi', isAvailable: true, asksAgeGroup: false, asksBibleAtHome: false, allowsPickup: true, isForChildren: true },
-    { slug: 'mesajul-lui-dumnezeu-pentru-tine', title: 'Mesajul lui Dumnezeu pentru tine', isAvailable: true, asksAgeGroup: false, asksBibleAtHome: false, allowsPickup: true, isForChildren: true },
-  ],
+  books: (
+    [
+      ['biblia', true, true, false, false],
+      ['viata-lui-isus', true, false, false, false],
+      ['tragedia-veacurilor', true, false, false, false],
+      ['calea-catre-hristos', true, false, false, false],
+      ['biblia-pentru-elevi', false, false, true, true],
+      ['mesajul-lui-dumnezeu-pentru-tine', false, false, true, true],
+    ] as const
+  ).map(([slug, asksAgeGroup, asksBibleAtHome, allowsPickup, isForChildren]) => {
+    const b = launchBooks.find((x) => x.slug === slug)!
+    return { slug, title: b.title, blurb: b.blurb, coverUrl: null, isAvailable: true, asksAgeGroup, asksBibleAtHome, allowsPickup, isForChildren }
+  }),
 }
 
 const SiteContext = createContext<SiteInfo>(FALLBACK)

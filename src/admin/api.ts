@@ -299,6 +299,37 @@ export interface AdminBook {
   isAvailable: boolean
   sortOrder: number
   newThisMonth: number
+  coverUrl: string | null
+}
+
+/** The book editor's fields (GET/PUT /admin/books/{id}). */
+export interface BookFields {
+  title: string
+  heading: string | null
+  blurb: string
+  lead: string
+  paragraphs: string[]
+  benefits: string[]
+  closing: string | null
+  formEyebrow: string | null
+  formTitle: string | null
+  coverFileId: string | null
+  bannerFileId: string | null
+  isAvailable: boolean
+  asksAgeGroup: boolean
+  asksBibleAtHome: boolean
+  allowsPickup: boolean
+  isForChildren: boolean
+}
+
+export interface AdminBookDetail extends BookFields {
+  id: number
+  slug: string
+  formEyebrow: string
+  formTitle: string
+  coverUrl: string | null
+  bannerUrl: string | null
+  orderCount: number
 }
 
 export interface Account {
@@ -387,6 +418,10 @@ export const adminApi = {
   setBookAvailable: (id: number, isAvailable: boolean) =>
     call<AdminBook[]>(`/admin/books/${id}`, json('PATCH', { isAvailable })),
   reorderBooks: (ids: number[]) => call<AdminBook[]>('/admin/books/order', json('PUT', { ids })),
+  book: (id: number) => call<AdminBookDetail>(`/admin/books/${id}`),
+  createBook: (body: BookFields) => call<AdminBookDetail>('/admin/books', json('POST', body)),
+  saveBook: (id: number, body: BookFields) => call<AdminBookDetail>(`/admin/books/${id}`, json('PUT', body)),
+  deleteBook: (id: number) => call<void>(`/admin/books/${id}`, json('DELETE')),
 
   admins: () => call<Admins>('/admin/admins'),
   inviteAdmin: (email: string, displayName: string) =>

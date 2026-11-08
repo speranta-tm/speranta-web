@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { church } from '../content/church'
-import type { BookContent } from '../content/books'
-import { apiUrl, type AnnouncementSummary } from '../lib/api'
+import { coverFor } from '../content/books'
+import { apiUrl, type AnnouncementSummary, type BookInfo } from '../lib/api'
 import { cx } from '../lib/cx'
 import { longDate } from '../lib/format'
 import { ButtonLink } from './Button'
@@ -61,18 +61,20 @@ export function Point({ icon = 'check', children }: { icon?: IconName; children:
 }
 
 /** Figma › BookCard (home page row). */
-export function BookCard({ book, available }: { book: BookContent; available: boolean }) {
+export function BookCard({ book }: { book: BookInfo }) {
+  const cover = coverFor(book.slug, book.coverUrl, apiUrl)
+  const available = book.isAvailable
   return (
     <div className="flex h-full flex-col items-center gap-4 rounded-[24px] bg-surface px-3 pt-4 pb-5 sm:px-4">
       <Link to={`/carti-gratuite/${book.slug}`} className="block w-full" tabIndex={-1} aria-hidden="true">
         <img
-          src={book.cover}
+          src={cover}
           alt=""
           loading="lazy"
           className="aspect-[3/4] w-full rounded-[10px] bg-line object-cover shadow-[0_8px_20px_rgb(26_32_44/0.18)]"
         />
       </Link>
-      <h3 className="t-card-title line-clamp-2 flex min-h-12 items-center text-center text-ink">{book.cardTitle}</h3>
+      <h3 className="t-card-title line-clamp-2 flex min-h-12 items-center text-center text-ink">{book.title}</h3>
       {available ? (
         <ButtonLink to={`/carti-gratuite/${book.slug}`} size="s" className="mt-auto">
           Comandă gratuit

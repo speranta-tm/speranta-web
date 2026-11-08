@@ -12,9 +12,10 @@ import eleviBanner from '../assets/img/banners/biblia-pentru-elevi.webp'
 import mesajulBanner from '../assets/img/banners/mesajul-lui-dumnezeu-pentru-tine.webp'
 
 /**
- * The text of each book page, as designed in Figma (Desktop › "Carte · …").
- * Which questions each order form asks comes from the API (/site), so the two
- * can never disagree about what is required.
+ * The six books the site launched with. Their text now lives in the API (and is
+ * edited in the admin); this copy is only the fallback shown when the API can't be
+ * reached, and the source of the covers and banners that ship with the site. A book
+ * added in the admin has its images uploaded instead.
  */
 export interface BookContent {
   slug: string
@@ -157,6 +158,15 @@ export const books: BookContent[] = [
 ]
 
 export const bookBySlug = (slug: string | undefined) => books.find((b) => b.slug === slug)
+
+/** The cover to show: the uploaded one if any, else the one shipped for a launch book. */
+export function coverFor(slug: string, coverUrl: string | null, apiUrl: (p: string) => string): string | undefined {
+  return coverUrl ? apiUrl(coverUrl) : bookBySlug(slug)?.cover
+}
+
+export function bannerFor(slug: string, bannerUrl: string | null, apiUrl: (p: string) => string): string | undefined {
+  return bannerUrl ? apiUrl(bannerUrl) : (bookBySlug(slug)?.banner ?? bookBySlug(slug)?.cover)
+}
 
 /** Old WordPress paths (/index.php/biblia/ …) → new ones, so shared links keep working. */
 export const legacyPaths: Record<string, string> = {
