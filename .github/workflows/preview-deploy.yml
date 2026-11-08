@@ -1,0 +1,135 @@
+# PR previews, step 2 of 2. Runs on workflow_run, which GitHub always runs from the DEFAULT
+# BRANCH's copy of this file, never the PR's, so a PR can't change what runs next to the
+# Cloudflare token (environment secret `cloudflare-pages`). It uploads the artifact of the
+# "Preview build" run that just succeeded to the Pages branch `pr-<number>`.
+# The PR number comes from GitHub's event payload, never from the artifact.
+name: Preview deploy
+
+on:
+  workflow_run:
+    workflows: [Preview build]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: deploy preview
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    # Job-level, not workflow-level: a later build that failed (or was skipped) never reaches
+    # this job, so it can't cancel a good deploy in progress; a newer good build of the same
+    # PR replaces the older one.
+    concurrency:
+      # Grouping only (it decides nothing about what is deployed; the step below does).
+      group: preview-deploy-${{ github.event.workflow_run.pull_requests[0].number || github.event.workflow_run.head_branch }}
+      cancel-in-progress: true
+    environment: cloudflare-pages
+    permissions:
+      actions: read # download the other run's artifact
+      contents: read # the sparse checkout of main's deploy tooling
+    outputs:
+      number: ${{ steps.pr.outputs.number }}
+      alias: ${{ steps.urls.outputs.alias }}
+      url: ${{ steps.urls.outputs.url }}
+    steps:
+      # The PR this build belongs to: exactly one open PR of this repo, into this repo, whose
+      # head is the commit that was built. Anything else deploys nothing.
+      - name: PR number
+        id: pr
+        env:
+          REPO_ID: ${{ github.repository_id }}
+        run: |
+          set -euo pipefail
+          numbers=$(jq -r --argjson repo "$REPO_ID" '
+            .workflow_run as $run
+            | [$run.pull_requests[]
+               | select(.base.repo.id == $repo and .head.repo.id == $repo and .head.sha == $run.head_sha)
+               | .number] | .[]' "$GITHUB_EVENT_PATH")
+          count=$(printf '%s\n' "$numbers" | grep -c '^[0-9][0-9]*$' || true)
+          [ "$count" = 1 ] || { echo "::error::expected exactly one matching PR, found $count"; exit 1; }
+          echo "number=$numbers" >> "$GITHUB_OUTPUT"
+
+      # Only the deploy tooling, from main: the pinned wrangler and its lockfile.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          sparse-checkout: .github/deploy
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # No token in this step. --ignore-scripts: `pages deploy` needs neither esbuild's nor
+      # workerd's install scripts (there are no Pages Functions).
+      - name: Install the deploy tooling
+        working-directory: .github/deploy
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: preview-dist
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Upload to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NUMBER: ${{ steps.pr.outputs.number }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          WRANGLER_OUTPUT_FILE_DIRECTORY: ${{ runner.temp }}/wrangler-output
+        run: >
+          .github/deploy/node_modules/.bin/wrangler pages deploy dist
+          --project-name=speranta-web --branch="pr-$NUMBER"
+          --commit-hash="$SHA" --commit-dirty=true
+
+      # Wrangler's machine-readable output: the deployment's own URL and the branch alias.
+      - name: Deployment URLs
+        id: urls
+        env:
+          OUT: ${{ runner.temp }}/wrangler-output
+        run: |
+          set -euo pipefail
+          line=$(cat "$OUT"/*.json | jq -c 'select(.type == "pages-deploy-detailed")' | tail -1)
+          echo "url=$(jq -r '.url // empty' <<<"$line")" >> "$GITHUB_OUTPUT"
+          echo "alias=$(jq -r '.alias // empty' <<<"$line")" >> "$GITHUB_OUTPUT"
+
+  comment:
+    name: comment preview links
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@v9
+        env:
+          NUMBER: ${{ needs.deploy.outputs.number }}
+          ALIAS: ${{ needs.deploy.outputs.alias }}
+          URL: ${{ needs.deploy.outputs.url }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        with:
+          script: |
+            const issue_number = Number(process.env.NUMBER);
+            const alias = process.env.ALIAS || `https://pr-${issue_number}.speranta-web.pages.dev`;
+            const url = process.env.URL;
+            const sha = (process.env.SHA || '').slice(0, 7);
+            const marker = '<!-- speranta-preview -->';
+            const rows = [`| **PR preview** (always latest) | ${alias} |`];
+            if (url && url !== alias) rows.push(`| **This commit** (\`${sha}\`) | ${url} |`);
+            const body = `${marker}\n### Preview deployed\n\n| | |\n|---|---|\n${rows.join('\n')}\n\nUpdates on every push · talks to the stage API.`;
+            const { owner, repo } = context.repo;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

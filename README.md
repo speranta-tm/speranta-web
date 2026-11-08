@@ -6,7 +6,10 @@ WordPress site at sperantatm.adventist.ro.
 - **Stack:** React 19 · Vite · TypeScript · Tailwind CSS v4 · React Router · Bun
 - **API:** [`speranta-api`](https://github.com/maze-33/speranta-api)
 - **Design:** [Figma](https://www.figma.com/design/NolJGaQ4AKE8Eqwc3ZXTaS). Every visual change is designed there first.
-- **Hosting:** not decided yet.
+- **Hosting:** Cloudflare Pages, project `speranta-web`. Merge to `main` → staging
+  (https://staging.speranta-web.pages.dev, stage API); a GitHub Release `vX.Y.Z` → production
+  (https://sperantatm.thorsp.net, prod API); each PR from this repo gets its own preview on the stage
+  API, linked in a PR comment. Release the API first when the site needs its new endpoints.
 
 ## Running it
 
