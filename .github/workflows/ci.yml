@@ -19,11 +19,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          # Pinned: resolving "latest" asks GitHub's API first, and that call has been
-          # timing out (504) and failing the whole job before anything ran.
-          bun-version: 1.4.2
+      # Bun from the npm registry rather than oven-sh/setup-bun: that action
+      # downloads from GitHub releases, which kept answering 504 and failing the
+      # job before anything ran. Node (and npm) come with the runner image.
+      - name: Install Bun
+        run: npm install --global bun@1.4.2 && bun --version
 
       - run: bun install --frozen-lockfile
 
