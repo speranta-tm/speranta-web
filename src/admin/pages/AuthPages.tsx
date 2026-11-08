@@ -9,7 +9,7 @@ import { adminApi, useToken } from '../api'
 import { useRemote } from '../data'
 import { ErrorNote } from '../ui'
 
-const MIN = 10
+const MIN = 4
 
 /** Figma › "Admin · Autentificare" card, shared by the four sign-in screens. */
 function AuthCard({ title, sub, children }: { title: string; sub: ReactNode; children: ReactNode }) {
