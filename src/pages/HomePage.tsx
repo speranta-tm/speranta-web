@@ -181,7 +181,7 @@ export function HomePage() {
             înțelegere mai profundă a existenței noastre, oferind perspectivă asupra scopului, valorilor și direcției
             pe care o urmăm în această lume.
           </p>
-          <ButtonLink to={church.facebook} newTab variant="secondary" icon="facebook" block className="lg:w-auto lg:self-start">
+          <ButtonLink to={church.facebook} newTab icon="facebook" block className="lg:w-auto lg:self-start">
             Vizitează pagina de Facebook
           </ButtonLink>
         </div>
