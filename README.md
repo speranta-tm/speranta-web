@@ -60,3 +60,27 @@ the new pages.
 
 The forms carry a hidden `website` field as a honeypot; the API keeps nothing a bot sends
 through it.
+
+## The admin (`/admin`)
+
+Loaded on demand (`src/admin/`, its own chunk), so visitors to the public pages never
+download it. Invite-only: the first admin comes from the API's `Bootstrap:AdminEmails`.
+
+| Path | Screen |
+|---|---|
+| `/admin/autentificare`, `/admin/parola-uitata`, `/admin/resetare-parola`, `/admin/invitatie` | sign-in, forgotten password, new password, accept an invitation |
+| `/admin` | dashboard: counts, "De făcut", shortcuts, phone alerts |
+| `/admin/comenzi[/:id]`, `/admin/inscrieri[/:id]`, `/admin/mesaje[/:id]` | the submissions, with status, internal note, history and CSV export |
+| `/admin/anunturi[/:id \| /nou]` | announcements, with an editor (autosaved drafts, scheduling, cover, preview) |
+| `/admin/program`, `/admin/carti`, `/admin/administratori` | schedule and flyer, books on/off and order, admins and invitations |
+
+The `:id` paths are the ones the notification emails and phone alerts link to.
+
+**Email that can't silently stop.** While Gmail refuses or isn't set up, every admin page
+shows a banner (from `GET /admin/mail-status`) saying since when and how many notifications
+are waiting; "Cum rezolv?" walks through making a new Gmail app password and pasting it in,
+which restarts email and sends everything that waited. Each submission whose email hasn't
+gone out is marked. **Phone alerts** (Web Push, `public/sw.js`) can be turned on from the
+dashboard per phone: they announce every new submission and an email outage, without going
+through Gmail. On an iPhone they need the admin added to the home screen first (the
+dashboard explains), which is why the admin, and only the admin, has a web manifest.
