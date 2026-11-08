@@ -1,20 +1,40 @@
-import { useEffect } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import { useEffect, useLayoutEffect, useRef } from 'react'
+import { Outlet, useLocation, useNavigationType } from 'react-router-dom'
 import { Footer } from './Footer'
 import { Header } from './Header'
 
+/** Where each visited page was scrolled to, by history entry. */
+const scrolled = new Map<string, number>()
+
+// The site restores positions itself; the browser's own attempt runs before the page has rendered.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+
 /** Public pages: header, page, footer. */
 export function Layout() {
-  const { pathname, hash } = useLocation()
+  const { pathname, hash, key } = useLocation()
+  const navigation = useNavigationType()
+  const current = useRef(key)
 
-  // A new page starts at the top; a #anchor link scrolls to its target instead.
+  // Remember each page's position for when the visitor comes back to it. The key is
+  // read when the event fires, so the scroll a page change causes is filed under the new page.
   useEffect(() => {
-    if (hash) {
+    const save = () => scrolled.set(current.current, window.scrollY)
+    window.addEventListener('scroll', save, { passive: true })
+    return () => window.removeEventListener('scroll', save)
+  }, [])
+
+  // Back/forward returns to where the visitor was; a new page starts at the top;
+  // a #anchor link scrolls to its target instead.
+  useLayoutEffect(() => {
+    current.current = key
+    if (navigation === 'POP' && scrolled.has(key)) {
+      window.scrollTo(0, scrolled.get(key)!)
+    } else if (hash) {
       document.getElementById(hash.slice(1))?.scrollIntoView()
     } else {
       window.scrollTo(0, 0)
     }
-  }, [pathname, hash])
+  }, [pathname, hash, key, navigation])
 
   return (
     <div className="flex min-h-dvh flex-col">

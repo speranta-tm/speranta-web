@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { IconTile, Point } from '../components/Bits'
 import { useTitle } from '../lib/useTitle'
 import { Button, ButtonLink } from '../components/Button'
@@ -76,19 +76,14 @@ function Banner({ book, info }: { book: BookPageData; info: BookPageData }) {
       <img src={bannerFor(book.slug, book.bannerUrl, apiUrl)} alt="" className="absolute inset-0 size-full scale-105 object-cover opacity-60 blur-[2px]" />
       <div className="absolute inset-0 bg-ink/60" />
       <div className="container-page relative flex flex-col items-center gap-3.5 py-8 text-center lg:flex-row lg:gap-16 lg:py-[72px] lg:text-left">
+        <BackLink className="flex self-start lg:hidden" />
         <img
           src={coverFor(book.slug, book.coverUrl, apiUrl)}
           alt={`Coperta cărții „${book.title}”`}
           className="h-[200px] w-[150px] rounded-[10px] bg-surface object-cover shadow-[0_20px_40px_rgb(0_0_0/0.35)] lg:h-[280px] lg:w-[210px] lg:rounded-xl"
         />
         <div className="flex flex-col items-center gap-4 lg:items-start">
-          <nav aria-label="Cale" className="t-small hidden gap-2 lg:flex">
-            <Link to="/carti-gratuite" className="text-line hover:text-white">
-              Cărți gratuite
-            </Link>
-            <span className="text-muted">/</span>
-            <span className="text-white">{book.title}</span>
-          </nav>
+          <BackLink className="hidden lg:flex" />
           <p className="t-small text-line lg:hidden">{tags.join(' · ')}</p>
           <h1 className="t-h1 text-white">{book.heading}</h1>
           <ul className="hidden gap-2 lg:flex">
@@ -108,6 +103,30 @@ function Banner({ book, info }: { book: BookPageData; info: BookPageData }) {
         </div>
       </div>
     </section>
+  )
+}
+
+/**
+ * Figma › "Carte · …" › Înapoi: back to wherever the visitor came from on this site
+ * (the home page or the book list). Opened straight from a link, there is no such
+ * page, so it goes to the book list instead.
+ */
+function BackLink({ className }: { className: string }) {
+  const navigate = useNavigate()
+  const cameFromSite = useLocation().key !== 'default'
+  return (
+    <Link
+      to="/carti-gratuite"
+      onClick={(e) => {
+        if (!cameFromSite || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+        e.preventDefault()
+        void navigate(-1)
+      }}
+      className={cx('t-small items-center gap-1.5 text-line hover:text-white', className)}
+    >
+      <Icon name="arrow-left" size={16} />
+      Înapoi
+    </Link>
   )
 }
 
