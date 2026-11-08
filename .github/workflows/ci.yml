@@ -21,7 +21,9 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          # Pinned: resolving "latest" asks GitHub's API first, and that call has been
+          # timing out (504) and failing the whole job before anything ran.
+          bun-version: 1.4.2
 
       - run: bun install --frozen-lockfile
 
