@@ -1,0 +1,8 @@
+{
+  "name": "speranta-web-deploy",
+  "private": true,
+  "description": "The pinned deploy tooling the Deploy and Preview deploy workflows run (main's copy only).",
+  "dependencies": {
+    "wrangler": "4.150.0"
+  }
+}

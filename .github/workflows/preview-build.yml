@@ -1,0 +1,44 @@
+# PR previews, step 1 of 2: build the PR with NO secrets and upload the result. Step 2,
+# preview-deploy.yml, runs from main's copy when this succeeds and does the upload to
+# Cloudflare, so nothing a PR changes ever runs next to the Cloudflare token.
+# Builds point at the stage API. PRs from forks are skipped (no preview).
+name: Preview build
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build preview
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Bun
+        run: npm install --global bun@1.4.2 && bun --version
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+        env:
+          VITE_API_BASE: https://sperantatm-api-stage.thorsp.net
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: preview-dist
+          path: dist
+          retention-days: 3
+          if-no-files-found: error

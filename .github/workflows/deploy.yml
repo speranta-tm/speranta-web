@@ -1,0 +1,141 @@
+# Staging and production deploys to Cloudflare Pages (project speranta-web):
+#   push to main                        -> staging     (staging.speranta-web.pages.dev, stage API)
+#   released vX.Y.Z from main           -> production  (sperantatm.thorsp.net, prod API)
+#   workflow_dispatch, on main only     -> staging or production
+# PR previews are separate: preview-build.yml + preview-deploy.yml.
+#
+# The Cloudflare token is an environment secret (`cloudflare-pages`, deployable only from
+# main and v* tags). Only the deploy job sees it, and only on its upload step: that job checks
+# out nothing but main's .github/deploy (the pinned wrangler + lockfile), installs it without
+# scripts, and uploads the files the secret-free build job produced.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  release:
+    # `released`, not `published`: it fires for a new full release AND for a pre-release promoted to
+    # one, and never for pre-releases or drafts. "Resolve target" still refuses anything that isn't a
+    # real vX.Y.Z release on main.
+    types: [released]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Which environment to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.event_name == 'release' && 'production' || inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      branch: ${{ steps.t.outputs.branch }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the release check below needs main's history
+          persist-credentials: false
+
+      # Decide the target once. Production only from a real release cut from main, or from a
+      # manual run on main; everything else is staging.
+      - name: Resolve target
+        id: t
+        env:
+          EVENT: ${{ github.event_name }}
+          CHOICE: ${{ inputs.environment }}
+          TAG: ${{ github.event.release.tag_name }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+          DRAFT: ${{ github.event.release.draft }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "workflow_dispatch" ] && [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::manual deploys run from main only (got $GITHUB_REF)"; exit 1
+          fi
+          if [ "$EVENT" = "release" ]; then
+            [ "$PRERELEASE" = "false" ] && [ "$DRAFT" = "false" ] \
+              || { echo "::error::$TAG is a draft or prerelease; production takes real releases only"; exit 1; }
+            [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+              || { echo "::error::release tag '$TAG' is not vX.Y.Z"; exit 1; }
+            git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+              || { echo "::error::$TAG ($GITHUB_SHA) is not on main"; exit 1; }
+            target=production
+          elif [ "$CHOICE" = "production" ]; then
+            target=production
+          else
+            target=staging
+          fi
+          if [ "$target" = production ]; then api=https://sperantatm-api.thorsp.net; else api=https://sperantatm-api-stage.thorsp.net; fi
+          echo "branch=$target" >> "$GITHUB_OUTPUT"
+          echo "api=$api" >> "$GITHUB_OUTPUT"
+          echo "Deploying $target with VITE_API_BASE=$api"
+
+      # Bun from the npm registry, as in ci.yml (oven-sh/setup-bun downloads from GitHub
+      # releases, which kept answering 504).
+      - name: Install Bun
+        run: npm install --global bun@1.4.2 && bun --version
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+        env:
+          VITE_API_BASE: ${{ steps.t.outputs.api }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-dist
+          path: dist
+          retention-days: 7
+          if-no-files-found: error
+
+  deploy:
+    name: deploy to Cloudflare Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment: cloudflare-pages
+    permissions:
+      contents: read # the sparse checkout of main's deploy tooling
+    steps:
+      # Only the deploy tooling, from main: the pinned wrangler and its lockfile.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          sparse-checkout: .github/deploy
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # No token in this step. --ignore-scripts: `pages deploy` needs neither esbuild's nor
+      # workerd's install scripts (there are no Pages Functions).
+      - name: Install the deploy tooling
+        working-directory: .github/deploy
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: web-dist
+          path: dist
+
+      - name: Upload to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BRANCH: ${{ needs.build.outputs.branch }}
+        run: >
+          .github/deploy/node_modules/.bin/wrangler pages deploy dist
+          --project-name=speranta-web --branch="$BRANCH"
+          --commit-hash="$GITHUB_SHA" --commit-dirty=true
