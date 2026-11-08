@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './index.css'
@@ -15,11 +15,22 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { ThanksPage } from './pages/ThanksPage'
 
+// eslint-disable-next-line react/only-export-components
+const AdminApp = lazy(() => import('./admin/AdminApp'))
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <SiteProvider>
       <BrowserRouter>
         <Routes>
+          <Route
+            path="admin/*"
+            element={
+              <Suspense fallback={<div className="min-h-dvh bg-surface-2" />}>
+                <AdminApp />
+              </Suspense>
+            }
+          />
           <Route element={<Layout />}>
             <Route index element={<HomePage />} />
             <Route path="activitati-pentru-copii" element={<KidsPage />} />

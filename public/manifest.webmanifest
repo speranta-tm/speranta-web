@@ -1,0 +1,14 @@
+{
+  "name": "Administrare – Biserica Speranța Timișoara",
+  "short_name": "Speranța admin",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#f7fafc",
+  "theme_color": "#1a202c",
+  "lang": "ro",
+  "icons": [
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/favicon.png", "sizes": "64x64", "type": "image/png" }
+  ]
+}
